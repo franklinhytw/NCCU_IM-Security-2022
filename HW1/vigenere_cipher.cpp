@@ -137,9 +137,23 @@ string encrypt(string key, string plaintext) {
 }
 
 string decrypt(string key, string ciphertext) { 
-    string plaintext;
+    vector<uint8_t> encoded_cipher_list;
 
-    return plaintext;
+    auto encoded_key = encode_to_numeric(key);
+    auto encoded_text = encode_to_numeric(ciphertext);
+
+    size_t key_length = encoded_key.size();
+    size_t key_idx_pointer = 0;
+
+    for(auto &v : encoded_text) {
+        // printf("enc=%u, v=%u, ans=%d\n", encoded_key[key_idx_pointer], v, (int)encoded_key[key_idx_pointer]-(int)v % 36);
+        encoded_cipher_list.push_back(((int)encoded_key[key_idx_pointer]-v) < 0 ? (int)encoded_key[key_idx_pointer]-v + 36 : encoded_key[key_idx_pointer]-v);
+
+        if(++key_idx_pointer == key_length) key_idx_pointer = 0;
+        else key_idx_pointer++;
+    }
+
+    return decode_to_string(encoded_cipher_list);
 }
 
 int main(int argc, char const *argv[]) {
@@ -169,9 +183,7 @@ int main(int argc, char const *argv[]) {
         inputText(plaintext, true);
         if (plaintext.empty()) break;
 
-        auto ans = encrypt(key, plaintext);
-        cout << "Cipher Text: " << ans << endl;
-
+        printf("The cipher text is >>>[%s]<<<", encrypt(key, plaintext).c_str());
         break;
       }
 
@@ -184,6 +196,8 @@ int main(int argc, char const *argv[]) {
 
         inputText(ciphertext, false);
         if (ciphertext.empty()) break;
+
+        printf("The plain text is >>>[%s]<<<", decrypt(key, ciphertext).c_str());
         break;
       }
 
@@ -191,8 +205,9 @@ int main(int argc, char const *argv[]) {
         exit(0); // EXIT PROGRAM
       }
     }
+
+    cout << "\n\n";
   }
 
-//   printf("The cipher text is >>>[%s]<<<", encrypt(key, plaintext).c_str());
   return 0;
 }
