@@ -10,46 +10,11 @@
 #include <cctype>
 #include <cstring>
 
-using namespace std;
+#ifdef _WIN32
+#include <windows.h>
+#endif
 
-// static map<char, uint8_t> mapping_table = {
-//     {'0', 0},
-//     {'1', 1},
-//     {'2', 2},
-//     {'3', 3},
-//     {'4', 4},
-//     {'5', 5},
-//     {'6', 6},
-//     {'7', 7},
-//     {'8', 8},
-//     {'9', 9},
-//     {'A', 10},
-//     {'B', 11},
-//     {'C', 12},
-//     {'D', 13},
-//     {'E', 14},
-//     {'F', 15},
-//     {'G', 16},
-//     {'H', 17},
-//     {'I', 18},
-//     {'J', 19},
-//     {'K', 20},
-//     {'L', 21},
-//     {'M', 22},
-//     {'N', 23},
-//     {'O', 24},
-//     {'P', 25},
-//     {'Q', 26},
-//     {'R', 27},
-//     {'S', 28},
-//     {'T', 29},
-//     {'U', 30},
-//     {'V', 31},
-//     {'W', 32},
-//     {'X', 33},
-//     {'Y', 34},
-//     {'Z', 35}
-// };
+using namespace std;
 
 void inputKey(string &key) {
   cout << "Please Input the KEY(0~9 A~Z):";
@@ -127,9 +92,10 @@ string encrypt(string key, string plaintext) {
     size_t key_idx_pointer = 0;
 
     for(auto &v : encoded_text) {
+        // printf("[%u] enc=%u, v=%u, ans=%d\n", key_idx_pointer, encoded_key[key_idx_pointer], v, (int)(v + encoded_key[key_idx_pointer]) % 36);
         encoded_cipher_list.push_back((v + encoded_key[key_idx_pointer]) % 36);
 
-        if(++key_idx_pointer == key_length) key_idx_pointer = 0;
+        if(key_idx_pointer+1 == key_length) key_idx_pointer = 0;
         else key_idx_pointer++;
     }
 
@@ -146,10 +112,10 @@ string decrypt(string key, string ciphertext) {
     size_t key_idx_pointer = 0;
 
     for(auto &v : encoded_text) {
-        // printf("enc=%u, v=%u, ans=%d\n", encoded_key[key_idx_pointer], v, (int)encoded_key[key_idx_pointer]-(int)v % 36);
-        encoded_cipher_list.push_back(((int)encoded_key[key_idx_pointer]-v) < 0 ? (int)encoded_key[key_idx_pointer]-v + 36 : encoded_key[key_idx_pointer]-v);
+        // printf("[%u] enc=%u, v=%u, ans=%d\n", key_idx_pointer, encoded_key[key_idx_pointer], v, (int)(36 + (v - encoded_key[key_idx_pointer]) % 36) % 36);
+        encoded_cipher_list.push_back((36 + (v - encoded_key[key_idx_pointer]) % 36) % 36);
 
-        if(++key_idx_pointer == key_length) key_idx_pointer = 0;
+        if(key_idx_pointer+1 == key_length) key_idx_pointer = 0;
         else key_idx_pointer++;
     }
 
@@ -157,6 +123,10 @@ string decrypt(string key, string ciphertext) {
 }
 
 int main(int argc, char const *argv[]) {
+#ifdef _WIN32
+  SetConsoleOutputCP(65001);
+#endif
+
   while (1) {
     cout << "[Vigenère Cipher Encoder/Decoder]\n" << endl;
     cout << "SELECT function:" << endl;
