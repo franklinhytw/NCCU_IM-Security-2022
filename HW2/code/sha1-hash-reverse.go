@@ -1,5 +1,9 @@
 package main
 
+// NCCU Information Security HW1 - Vigenère Cipher Encoder/Decoder
+// Mar 11, 2022
+// 109971014 林翰陽
+
 /***********************************************************************************
 // PW cracker (密碼破解工具開發)
 
@@ -67,9 +71,8 @@ func reverseSha1Hash(hash_value *[]byte) []byte {
 		toNumberSystem26(i, &byte_arr)
 
 		guess_hash_value := calcSha1(&byte_arr)
-		fmt.Printf("NUM=%d -> 26 NUM = %s, HASH:%s\n", i, string(byte_arr[:]), hex.EncodeToString(guess_hash_value))
-		// fmt.Println(guess_hash_value)
-		res := bytes.Compare(guess_hash_value, byte_arr)
+		// fmt.Printf("NUM=%d -> 26 NUM = %s, HASH:%s\n", i, string(byte_arr[:]), hex.EncodeToString(guess_hash_value))
+		res := bytes.Compare(guess_hash_value, *hash_value)
 
 		if res == 0 {
 			return byte_arr
