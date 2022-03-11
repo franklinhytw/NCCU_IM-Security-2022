@@ -66,18 +66,58 @@ func reverseSha1Hash(hash_value *[]byte) []byte {
 		total = total + int(math.Pow(26, float64(n)))
 	}
 
-	for i := 0; i < total; i = i + 1 {
-		var byte_arr []byte
-		toNumberSystem26(i, &byte_arr)
+	var ans *[]byte
+	is_done := false
 
-		guess_hash_value := calcSha1(&byte_arr)
-		// fmt.Printf("NUM=%d -> 26 NUM = %s, HASH:%s\n", i, string(byte_arr[:]), hex.EncodeToString(guess_hash_value))
-		res := bytes.Compare(guess_hash_value, *hash_value)
+	sp := 0
+	for {
+		pre_sp := sp
 
-		if res == 0 {
-			return byte_arr
+		if sp+1000 <= total {
+			sp = sp + 1000
+		} else {
+			sp = total
+		}
+
+		for i := pre_sp; i < sp; i++ {
+			go func(count int, done *bool, ans *[]byte) {
+				for j := 0; j < count; j = j + 1 {
+					if *done {
+						break
+					}
+
+					var byte_arr []byte
+					toNumberSystem26(j, &byte_arr)
+
+					guess_hash_value := calcSha1(&byte_arr)
+					// fmt.Printf("NUM=%d -> 26 NUM = %s, HASH:%s\n", j, string(byte_arr[:]), hex.EncodeToString(guess_hash_value))
+					res := bytes.Compare(guess_hash_value, *hash_value)
+
+					if res == 0 {
+						*done = true
+						ans = &byte_arr
+					}
+				}
+			}(i, &is_done, ans)
+		}
+
+		if sp == total {
+			break
 		}
 	}
+
+	// for i := 0; i < total; i = i + 1 {
+	// 	var byte_arr []byte
+	// 	toNumberSystem26(i, &byte_arr)
+
+	// 	guess_hash_value := calcSha1(&byte_arr)
+	// 	// fmt.Printf("NUM=%d -> 26 NUM = %s, HASH:%s\n", i, string(byte_arr[:]), hex.EncodeToString(guess_hash_value))
+	// 	res := bytes.Compare(guess_hash_value, *hash_value)
+
+	// 	if res == 0 {
+	// 		return byte_arr
+	// 	}
+	// }
 
 	return nil
 }
