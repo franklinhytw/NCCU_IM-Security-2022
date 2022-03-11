@@ -16,8 +16,11 @@ package main
 **********************************************************************************/
 
 import (
+	"bytes"
 	"crypto/sha1"
+	"encoding/hex"
 	"fmt"
+	"math"
 	"time"
 )
 
@@ -39,96 +42,56 @@ func calcSha1(hash_value *[]byte) []byte {
 	return bs
 }
 
+func toNumberSystem26(n int, rtn *[]byte) {
+	if n < 26 {
+		*rtn = append(*rtn, byte(n)+0x61)
+	} else {
+		toNumberSystem26(n/26-1, rtn)
+		toNumberSystem26(n%26, rtn)
+	}
+}
+
 func reverseSha1Hash(hash_value *[]byte) []byte {
-	var counter int = 0
-	// UTF-8 code a~z = 0x61 ~ 0x7a
+	var total int = 0
 
-	// LIMITED to 10 characters
-	for i := 1; i <= 3; i = i + 1 {
-		byte_arr := make([]byte, i)
+	// // UTF-8 code a~z = 0x61 ~ 0x7a
 
-		// init array to set 'a'
-		for j := range byte_arr {
-			byte_arr[j] = 0x61
-		}
+	// // LIMITED to 10 characters
 
-		var offset byte = 0
-		var shift_pointer int = 1
+	for n := 1; n <= 10; n = n + 1 {
+		total = total + int(math.Pow(26, float64(n)))
+	}
 
-		for {
-			byte_arr[i-1] = 0x61 + offset
+	for i := 0; i < total; i = i + 1 {
+		var byte_arr []byte
+		toNumberSystem26(i, &byte_arr)
 
-			/* Try to hash */
-			fmt.Println(string(byte_arr[:]))
-			counter = counter + 1
-			// guess_hash_value := calcSha1(&byte_arr)
-			// res := bytes.Compare(guess_hash_value, byte_arr)
+		guess_hash_value := calcSha1(&byte_arr)
+		fmt.Printf("NUM=%d -> 26 NUM = %s, HASH:%s\n", i, string(byte_arr[:]), hex.EncodeToString(guess_hash_value))
+		// fmt.Println(guess_hash_value)
+		res := bytes.Compare(guess_hash_value, byte_arr)
 
-			// if res == 0 {
-			// 	return byte_arr
-			// }
-			/***************/
-
-			if offset >= 25 {
-				if i == 1 {
-					break
-				}
-
-				var escape bool = false
-
-				for s := 1; s <= shift_pointer; s = s + 1 {
-					fmt.Printf("s=%d, i=%d\n", s, i)
-					if s == i {
-						escape = true
-						break
-					}
-
-					if byte_arr[i-1-s]+1 <= 0x7a {
-						byte_arr[i-1-s] = byte_arr[i-1-s] + 1
-						break
-					} else {
-						// init array to set 'a'
-						for idx := 1; idx <= shift_pointer; idx = idx + 1 {
-							fmt.Printf("idx=%d, shift_pointer=%d\n", idx, shift_pointer)
-							byte_arr[i-idx] = 0x61
-						}
-
-						// next index
-						shift_pointer = shift_pointer + 1
-					}
-				}
-
-				if escape {
-					break
-				}
-
-				// RESET TO ZERO
-				offset = 0
-			} else {
-				offset = offset + 1
-			}
+		if res == 0 {
+			return byte_arr
 		}
 	}
-	fmt.Printf("RESULT:%d\n", counter)
 
 	return nil
 }
 
 func main() {
-	// var sha1_hash_value string
+	var sha1_hash_value string
 
-	// fmt.Println("Please Input Original SHA-1 hash value: ")
+	fmt.Println("Please Input Original SHA-1 hash value: ")
 
-	// // INPUT
-	// fmt.Scanln(&sha1_hash_value)
+	// INPUT
+	fmt.Scanln(&sha1_hash_value)
 
-	hash_byte_arr_data := []byte{0x00}
-	// hash_byte_arr_data, err := hex.DecodeString(sha1_hash_value)
-	// if err != nil {
-	// 	// Not the hex string. STOP PROGRAM
-	// 	panic(err)
-	// }
-
+	hash_byte_arr_data, err := hex.DecodeString(sha1_hash_value)
+	if err != nil {
+		// Not the hex string. STOP PROGRAM
+		panic(err)
+	}
 	// timer start
 	start := time.Now()
 
@@ -142,5 +105,5 @@ func main() {
 
 	fmt.Println(elapsed)
 
-	fmt.Printf("The hash original value is:\n%s\n", answer)
+	fmt.Printf("The hash original value is:\n%s\n", string(answer[:]))
 }
