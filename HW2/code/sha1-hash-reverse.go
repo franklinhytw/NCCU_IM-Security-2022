@@ -25,6 +25,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"math"
+	"sync"
 	"time"
 )
 
@@ -66,11 +67,21 @@ func reverseSha1Hash(hash_value *[]byte) []byte {
 		total = total + int(math.Pow(26, float64(n)))
 	}
 
-	var ans *[]byte
+	var ans []byte
 	is_done := false
 
+	var wg sync.WaitGroup
+
 	sp := 0
+
+	thread_counter := 0
+
 	for {
+		if thread_counter >= 16 {
+			fmt.Println("WAIT")
+			wg.Wait()
+			thread_counter = 0
+		}
 		pre_sp := sp
 
 		if sp+1000 <= total {
@@ -79,47 +90,46 @@ func reverseSha1Hash(hash_value *[]byte) []byte {
 			sp = total
 		}
 
-		for i := pre_sp; i < sp; i++ {
-			go func(count int, done *bool, ans *[]byte) {
-				for j := 0; j < count; j = j + 1 {
-					if *done {
-						break
-					}
-
-					var byte_arr []byte
-					toNumberSystem26(j, &byte_arr)
-
-					guess_hash_value := calcSha1(&byte_arr)
-					// fmt.Printf("NUM=%d -> 26 NUM = %s, HASH:%s\n", j, string(byte_arr[:]), hex.EncodeToString(guess_hash_value))
-					res := bytes.Compare(guess_hash_value, *hash_value)
-
-					if res == 0 {
-						*done = true
-						ans = &byte_arr
-					}
-				}
-			}(i, &is_done, ans)
+		if is_done {
+			break
 		}
+
+		wg.Add(1)
+		fmt.Printf("calculating range: %d ~ %d\n", pre_sp, sp)
+
+		go func(start_count int, end_count int, done *bool, ans *[]byte, thread_counter *int) {
+			for j := start_count; j < end_count; j = j + 1 {
+				var byte_arr []byte
+				toNumberSystem26(j, &byte_arr)
+
+				guess_hash_value := calcSha1(&byte_arr)
+				// fmt.Printf("NUM=%d -> 26 NUM = %s, HASH:%s\n", j, string(byte_arr[:]), hex.EncodeToString(guess_hash_value))
+				res := bytes.Compare(guess_hash_value, *hash_value)
+
+				if res == 0 {
+					*done = true
+					*ans = byte_arr
+					break
+				}
+			}
+			// *thread_counter = *thread_counter - 1
+			defer wg.Done()
+		}(pre_sp, sp, &is_done, &ans, &thread_counter)
 
 		if sp == total {
 			break
 		}
+
+		thread_counter = thread_counter + 1
 	}
 
-	// for i := 0; i < total; i = i + 1 {
-	// 	var byte_arr []byte
-	// 	toNumberSystem26(i, &byte_arr)
+	wg.Wait()
 
-	// 	guess_hash_value := calcSha1(&byte_arr)
-	// 	// fmt.Printf("NUM=%d -> 26 NUM = %s, HASH:%s\n", i, string(byte_arr[:]), hex.EncodeToString(guess_hash_value))
-	// 	res := bytes.Compare(guess_hash_value, *hash_value)
-
-	// 	if res == 0 {
-	// 		return byte_arr
-	// 	}
-	// }
-
-	return nil
+	if is_done {
+		return ans
+	} else {
+		return nil
+	}
 }
 
 func main() {
@@ -129,6 +139,7 @@ func main() {
 
 	// INPUT
 	fmt.Scanln(&sha1_hash_value)
+	// sha1_hash_value = "d134875d6721c9ce683e1a30cbad9de1354a65a1"
 
 	hash_byte_arr_data, err := hex.DecodeString(sha1_hash_value)
 	if err != nil {
@@ -138,6 +149,7 @@ func main() {
 	// timer start
 	start := time.Now()
 
+	fmt.Printf("Calculating... Please Wait\n\n")
 	answer := reverseSha1Hash(&hash_byte_arr_data)
 
 	// timer end
