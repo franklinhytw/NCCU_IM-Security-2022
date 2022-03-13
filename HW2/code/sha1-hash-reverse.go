@@ -4,6 +4,9 @@ package main
 // Mar 11, 2022
 // 109971014 林翰陽
 
+// Goroutine reference:
+// https://javasgl.github.io/goroutinue-limit/
+
 /***********************************************************************************
 // PW cracker (密碼破解工具開發)
 
@@ -25,6 +28,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"math"
+	"runtime"
 	"sync"
 	"time"
 )
@@ -71,17 +75,11 @@ func reverseSha1Hash(hash_value *[]byte) []byte {
 	is_done := false
 
 	var wg sync.WaitGroup
+	limiter := make(chan bool, runtime.NumCPU())
 
 	sp := 0
 
-	thread_counter := 0
-
 	for {
-		if thread_counter >= 16 {
-			fmt.Println("WAIT")
-			wg.Wait()
-			thread_counter = 0
-		}
 		pre_sp := sp
 
 		if sp+1000 <= total {
@@ -95,9 +93,10 @@ func reverseSha1Hash(hash_value *[]byte) []byte {
 		}
 
 		wg.Add(1)
-		fmt.Printf("calculating range: %d ~ %d\n", pre_sp, sp)
+		limiter <- true
+		// fmt.Printf("calculating range: %d ~ %d\n", pre_sp, sp)
 
-		go func(start_count int, end_count int, done *bool, ans *[]byte, thread_counter *int) {
+		go func(start_count int, end_count int, done *bool, limiter chan bool, ans *[]byte) {
 			for j := start_count; j < end_count; j = j + 1 {
 				var byte_arr []byte
 				toNumberSystem26(j, &byte_arr)
@@ -112,15 +111,13 @@ func reverseSha1Hash(hash_value *[]byte) []byte {
 					break
 				}
 			}
-			// *thread_counter = *thread_counter - 1
 			defer wg.Done()
-		}(pre_sp, sp, &is_done, &ans, &thread_counter)
+			<-limiter
+		}(pre_sp, sp, &is_done, limiter, &ans)
 
 		if sp == total {
 			break
 		}
-
-		thread_counter = thread_counter + 1
 	}
 
 	wg.Wait()
@@ -158,7 +155,11 @@ func main() {
 	// calculate spend time
 	elapsed := t.Sub(start)
 
+	fmt.Print("Spend Time: ")
 	fmt.Println(elapsed)
 
-	fmt.Printf("The hash original value is:\n%s\n", string(answer[:]))
+	fmt.Printf("The hash original value is:\n%s\n\n\n\n", string(answer[:]))
+
+	fmt.Println("Press the Enter Key to terminate the console screen!")
+	fmt.Scanln() // wait for Enter Key
 }
