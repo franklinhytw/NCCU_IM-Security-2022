@@ -1,6 +1,6 @@
 package main
 
-// NCCU Information Security HW1 - Vigenère Cipher Encoder/Decoder
+// NCCU Information Security HW2 - PW cracker
 // Mar 11, 2022
 // 109971014 林翰陽
 
